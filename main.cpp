@@ -19,8 +19,13 @@ int main()
 {
     vector <line_node> word_analysier;
     PreProcess(word_analysier);
-    for(int i=0;i<word_analysier[10].word_number;i++)
-        cout <<word_analysier[10].word[i]<<"\t"<<endl;
+    for (int j=0;j<16;j++)
+    {
+    for(int i=0;i<word_analysier[j].word_number;i++)//word_analysier[10].word_number
+        cout <<word_analysier[j].word[i]<<"\t";
+    cout <<endl;
+    }
+
 
 }
 void PreProcess(vector <line_node> &word_analysier)
@@ -29,93 +34,100 @@ void PreProcess(vector <line_node> &word_analysier)
     string line;
     string text;
     ifstream input;
-    line_node lnode;
-    int line_number;
+    line_node *lnode;
+    int line_number=0;
     input.open("input.txt");
     if(!input)
         cerr << "couldn't open: input.txt";
     while(getline(input,line))
     {
+        lnode = new line_node;
         line_number++;
-        lnode.line_number=line_number;
-        lnode.word_number=0;
+        lnode->line_number=line_number;
+        lnode->word_number=0;
         str=const_cast<char*>(line.c_str());
 
         while(*str!='\r')
         {
             if(*str == ' '&&!text.empty())
             {
-                lnode.word.push_back(text);
-                lnode.word_number++;
+                lnode->word.push_back(text);
+                lnode->word_number++;
                 text="";
-            }
-            else if(FindText(str,"(",lnode,text))
+            }else if(FindText(str,"//",*lnode,text))
             {
+                lnode->word.pop_back();
+                lnode->word_number--;
+                word_analysier.push_back(*lnode);
+                break;
             }
-            else if(FindText(str,")",lnode,text))
+            else if(FindText(str,"/*",*lnode,text))
             {
-            }
-            else if(FindText(str,"{",lnode,text))
-            {
-            }
-            else if(FindText(str,"}",lnode,text))
-            {
-
-            }
-            else if(FindText(str,"++",lnode,text))
-            {
-
-            }
-            else if(FindText(str,"--",lnode,text))
-            {
-
-            }
-            else if(FindText(str,"+",lnode,text))
-            {
-
-            }
-            else if(FindText(str,"-",lnode,text))
-            {
-
-            }
-            else if(FindText(str,"=",lnode,text))
-            {
-
-            }
-            else if(FindText(str,";",lnode,text))
-            {
-            }
-            else if(FindText(str,"\"",lnode,text))
-             {
-                while(!FindText(str,"\"",lnode,text))
-                    str++;
-            }else if(FindText(str,"\\\\",lnode,text))
-            {
-                lnode.word.pop_back();
-                lnode.word_number--;
-            }
-            else if(FindText(str,"\\*",lnode,text))
-            {
-                lnode.word.pop_back();
-                lnode.word_number--;
-                 while(!FindText(str,"*\\",lnode,text))\
+                lnode->word.pop_back();
+                lnode->word_number--;
+                 while(!FindText(str,"*/",*lnode,text))\
                  {
                      str++;
-                     if(*str='\0')
+                     if(*str=='\r')
                      {
-                         word_analysier.push_back(lnode);
+                         word_analysier.push_back(*lnode);
+                         lnode = new line_node;
                          getline(input,line);
                          line_number++;
-                         lnode.line_number=line_number;
-                         lnode.word_number=0;
+                         lnode->line_number=line_number;
+                         lnode->word_number=0;
                          str=const_cast<char*>(line.c_str());
 
                      }
                  }
-                 lnode.word.pop_back();
-                 lnode.word_number--;
+                 lnode->word.pop_back();
+                 lnode->word_number--;
             }
-            else{
+            else if(FindText(str,"(",*lnode,text))
+            {
+            }
+            else if(FindText(str,")",*lnode,text))
+            {
+            }
+            else if(FindText(str,"{",*lnode,text))
+            {
+            }
+            else if(FindText(str,"}",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,"++",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,"--",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,"+",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,"-",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,"==",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,"=",*lnode,text))
+            {
+
+            }
+            else if(FindText(str,";",*lnode,text))
+            {
+            }
+            else if(FindText(str,"\"",*lnode,text))
+             {
+                while(!FindText(str,"\"",*lnode,text))
+                    str++;
+            }else{
                 text=text+*str;
                 str++;
             }
@@ -123,10 +135,12 @@ void PreProcess(vector <line_node> &word_analysier)
             {
                 if(!text.empty())
                 {
-                    lnode.word.push_back(text);
-                    lnode.word_number++;
+                    lnode->word.push_back(text);
+                    lnode->word_number++;
                 }
-                word_analysier.push_back(lnode);
+                word_analysier.push_back(*lnode);
+                lnode = new line_node;
+
 
             }
 
@@ -145,6 +159,8 @@ bool FindText(char *&str,const char *text1,line_node &lnode,string &text)
     {
         read++;
     }
+    if(*read=='\t')
+        read++;
     if(strncmp(read,text1,len)==0)
     {
         if(!text.empty())
@@ -164,4 +180,4 @@ bool FindText(char *&str,const char *text1,line_node &lnode,string &text)
     }
 }
 
-void
+
