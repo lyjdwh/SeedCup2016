@@ -6,6 +6,7 @@
 #include <vector>
 #include <new>
 #include <cstring>
+#include <stack>
 
 using namespace std;
 typedef struct {
@@ -13,12 +14,31 @@ typedef struct {
     int word_number;
     int line_number;
 } line_node;
+
+typedef struct  var_node {
+    string name;
+    bool is_var;
+    union
+    {
+        int value;
+        struct var_node *scope;
+    }content;
+    struct var_node *next;
+    struct var_node *parent;
+} var_node; //
+
 void PreProcess(vector<line_node> &word_analysier);//词法分析,能很好地处理注释
 bool FindText(char *&str,const char *text1,line_node &lnode,string &text);//寻找特定字符，并过滤之前空格
+void CreateVarTree(vector<line_node> &word_a,var_node *current,vector<line_node>::iterator iter_c1,vector <string>::iterator iter_c2);
+bool IsStr(string str);
 int main()
 {
     vector <line_node> word_analysier;//存储词法分析器运行结果
+    var_node * var_tree=new var_node;
+    var_tree->is_var=false;
     PreProcess(word_analysier);
+    cout <<*(((word_analysier.begin())->word).begin())<<endl;
+    CreateVarTree(word_analysier,var_tree,word_analysier.begin(),((word_analysier.begin())->word).begin());
     //输出结果
     for (int j=0;j<word_analysier.size();j++)
     {
@@ -175,6 +195,73 @@ bool FindText(char *&str,const char *text1,line_node &lnode,string &text)
         return true;
     }else{
         str=read;
+        return false;
+    }
+}
+
+void CreateVarTree(vector<line_node> &word_a,var_node *current,vector<line_node>::iterator iter_c1,vector <string>::iterator iter_c2)
+{
+    var_node * p;
+    var_node *base=current;
+    vector<line_node>::iterator iter_1;
+    vector <string>::iterator iter_2;
+    for(iter_1=iter_c1;iter_1!=word_a.end();iter_1++)
+    {
+        for(iter_2=iter_c2;iter_2!=(iter_1->word).end();iter_2++)
+        {
+            if(*iter_2=="for")
+            {
+                current->content.scope=new var_node;
+                current->content.scope->is_var=false;
+                CreateVarTree(word_a,current->content.scope,iter_1,iter_2);
+            }
+            if(*iter_2=="int")
+            {
+                while(*iter_2!=";")
+                {
+                    iter_2++;
+                    if(IsStr(*(iter_2))&&*(iter_2+1)!="=")
+                    {
+                        p=new var_node;
+                        p->name=*iter_2;
+                        p->is_var=true;
+                        p->parent=base;
+                        current->next=p;
+                        current=p;
+
+                    }else if(IsStr(*(iter_2))&&*(iter_2+1)=="=")
+                    {
+                        p=new var_node;
+                        p->name=*iter_2;
+                        p->is_var=true;
+                        p->parent=base;
+                        current->next=p;
+                        current=p;
+                        while(1)
+                        {
+                            if(*iter_2==","||*iter_2==";")
+                            {
+                                break;
+                            }else{
+                                iter_2++;
+                            }
+                        }
+
+
+                    }
+
+                }
+            }
+        }
+    }
+}
+bool IsStr(string str)
+{
+    if(str!="+"&&str!="-"&&str!="++"&&str!="--"&&str!="="&&str!="=="&&str!="}"
+            &&str!="{"&&str!="("&&str!="}"&&str!="\""&&str!=";")
+    {
+        return true;
+    }else{
         return false;
     }
 }
