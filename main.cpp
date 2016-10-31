@@ -13,20 +13,19 @@ typedef struct {
     int word_number;
     int line_number;
 } line_node;
-void PreProcess(vector<line_node> &word_analysier);
-bool FindText(char *&str,const char *text1,line_node &lnode,string &text);
+void PreProcess(vector<line_node> &word_analysier);//词法分析,能很好地处理注释
+bool FindText(char *&str,const char *text1,line_node &lnode,string &text);//寻找特定字符，并过滤之前空格
 int main()
 {
-    vector <line_node> word_analysier;
+    vector <line_node> word_analysier;//存储词法分析器运行结果
     PreProcess(word_analysier);
-    for (int j=0;j<16;j++)
+    //输出结果
+    for (int j=0;j<word_analysier.size();j++)
     {
     for(int i=0;i<word_analysier[j].word_number;i++)//word_analysier[10].word_number
         cout <<word_analysier[j].word[i]<<"\t";
-    cout <<endl;
+    cout <<word_analysier[j].line_number<<endl;
     }
-
-
 }
 void PreProcess(vector <line_node> &word_analysier)
 {
@@ -47,7 +46,7 @@ void PreProcess(vector <line_node> &word_analysier)
         lnode->word_number=0;
         str=const_cast<char*>(line.c_str());
 
-        while(*str!='\r')
+        while(*str!='\r')//因为一行的结尾为\r\n，getline把\n去掉了,所以通过判断\r看是否到末尾
         {
             if(*str == ' '&&!text.empty())
             {
@@ -159,7 +158,7 @@ bool FindText(char *&str,const char *text1,line_node &lnode,string &text)
     {
         read++;
     }
-    if(*read=='\t')
+    if(*read=='\t')//\t不属于空格
         read++;
     if(strncmp(read,text1,len)==0)
     {
