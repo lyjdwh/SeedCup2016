@@ -295,5 +295,22 @@ bool IsStr(string str)
         return false;
     }
 }
-
+void SearchVar(sring name,var_node *base)
+{
+    int has_found;
+    var_node * cursor=base->next;
+    while(cursor!=NULL)
+    {
+        if(cursor->is_var &&cursor->name==name)
+        {
+            has_found=true;
+            break;
+        }
+        if(cursor->next==NULL){
+            cursor =cursor ->parent;
+        }else{
+            cursor =cursor->next;
+        }
+    }   
+}
 
