@@ -32,15 +32,17 @@ typedef struct  var_node {
 
 void PreProcess(vector<line_node> &word_analysier);//词法分析,能很好地处理注释
 bool FindText(char *&str,const char *text1,line_node &lnode,string &text);//寻找特定字符，并过滤之前空格
+//创建变量树
 void CreateVarTree(vector<line_node> &word_a,var_node *current,vector <line_node>::iterator &iter_c1,vector <string>::iterator &iter_c2,int &flag1);
-var_node* SearchVar(string name,var_node *base);
-bool IsStr(string str);
-int Precede(string str1,string str2);
-int CalcExpression(queue <string>& expression);
+var_node* SearchVar(string name,var_node *base);   //在变量树中搜索变量
+bool IsStr(string str);                            //判断字符串是否为变量字符串
+int Precede(string str1,string str2);              //判断运算符号的优先级，1为大，-1为小，0为相等
+int CalcExpression(queue <string>& expression,int &result);
+void Run(vector <line_node>&word_a,var_node *var_tree);
 int main()
 {
     vector <line_node> word_analysier;//存储词法分析器运行结果
-    var_node * var_tree=new var_node;
+    var_node * var_tree=new var_node;   //存储变量树
     vector <line_node>::iterator iter_c1;
     vector <string>::iterator iter_c2;
     int flag1=0;
@@ -48,25 +50,9 @@ int main()
     PreProcess(word_analysier);
     iter_c1=word_analysier.begin();
     iter_c2=((word_analysier.begin())->word).begin();
-    cout <<*(((word_analysier.begin())->word).begin())<<endl;
     CreateVarTree(word_analysier,var_tree,iter_c1,iter_c2,flag1);
-    //输出结果
-//    for (int j=0;j<word_analysier.size();j++)
-//    {
-//    for(int i=0;i<word_analysier[j].word_number;i++)//word_analysier[10].word_number
-//        cout <<word_analysier[j].word[i]<<"\t";
-//    cout <<word_analysier[j].line_number<<endl;
-//    }
-    queue <string> expression;
+    Run(word_analysier,var_tree);
 
-    expression.push("3");
-    expression.push("+");
-    expression.push("3");
-    expression.push("*");
-    expression.push("2");
-
-    int result=CalcExpression(expression);
-    cout << result <<endl;
 
 }
 void PreProcess(vector <line_node> &word_analysier)
@@ -228,7 +214,7 @@ bool FindText(char *&str,const char *text1,line_node &lnode,string &text)
 void CreateVarTree(vector <line_node> &word_a,var_node *current,vector <line_node>::iterator &iter_c1,vector <string>::iterator &iter_c2,int &flag1)
 
 {
-    int flag=0;
+    int flag=0;//嵌套标志位，为0 时表示不嵌套
     var_node * p;
     var_node *base=current;
     vector<line_node>::iterator iter_1;
@@ -291,7 +277,7 @@ void CreateVarTree(vector <line_node> &word_a,var_node *current,vector <line_nod
                     }
 
                 }
-                if(flag1!=0)
+                if(flag1!=0)    //若flag==0 则继续向下进行
                 {
                     iter_c1=iter_1;
                     iter_c2=iter_2;
@@ -325,7 +311,7 @@ var_node * SearchVar(string name,var_node *base)
         }
         if(cursor->next==NULL){
             cursor =cursor ->parent;
-            cursor=cursor->parent;
+            cursor=cursor->parent;//返回到上一变量域的根节点
         }else{
             cursor =cursor->next;
         }
@@ -338,16 +324,17 @@ var_node * SearchVar(string name,var_node *base)
     }
 }
 
-int CalcExpression(queue <string> &expression)
+int CalcExpression(queue <string> &expression,int &result1)
 {
     stack <string,vector<string> > optr,oped;//oped:number; optr:fuhao
+
     stringstream stream;
     int a;
     int b;
     int flag=0;
     string temp;
     string result;
-    expression.push("#");
+    expression.push("#");//作为计算剩余的推动项
 
     while(!expression.empty())
     {
@@ -401,7 +388,6 @@ int CalcExpression(queue <string> &expression)
                          stream.clear();
                          oped.push(result);
 
- //                    optr.push(expression.front());
 
 
                  }
@@ -456,8 +442,7 @@ int CalcExpression(queue <string> &expression)
                         stream.clear();
                         oped.push(result);
 
-//                    optr.push(expression.front());
-                        optr.pop();
+
                     expression.pop();
                 }else if(Precede(expression.front(),optr.top())==1)
                 {
@@ -506,8 +491,8 @@ int CalcExpression(queue <string> &expression)
     stream << oped.top();
     stream >> a;
     stream.clear();
-    return a;
-
+//    return a;
+    result1=a;
 }
 int Precede(string str1,string str2)
 {
@@ -515,6 +500,7 @@ int Precede(string str1,string str2)
     vector<string> str={"+","-","*","/","(",")","#"};
     int i,j;
     int value[7][7]={1,1,-1,-1,-1,1,1,1,1,-1,-1,-1,1,1,1,1,1,1,-1,1,1,1,1,1,1,-1,1,1,-1,-1,-1,-1,-1,0,-2,1,1,1,1,1,1,1,-1,-1,-1,-1,-1,1,0};
+    //value数组为优先级大小
     for(i=0;i<7;i++)
         for(j=0;j<7;j++)
             str_map[str[i]][str[j]]=value[i][j];
@@ -523,4 +509,74 @@ int Precede(string str1,string str2)
     return str_map[str1][str2];
 
 }
+//实现了顺序结构
+void Run(vector <line_node>&word_a,var_node *var_tree)
+{
+    char *str;
+    char *str1;
+    string line;
+    string text;
+    ifstream input;
+    ofstream output;
+    int flag=0;
+    int line_number=0;
+    var_node *result;
+    input.open("input.txt");
+    output.open("output.txt");
+    if(!output)
+        cerr <<"couldn't: output.txt"<<endl;
+    queue <string> expression;
+    if(!input)
+        cerr << "couldn't open: input.txt";
+    while(getline(input,line))
+    {
 
+        line_number++;
+        str=const_cast<char*>(line.c_str());
+        while(*str!='\r')
+
+        {
+
+            if(*str=='=')
+            {
+                flag=1;
+                str1=str;
+                while(*str1!=' ')
+                {
+                    str1--;
+                }
+                str1++;
+                while(*str1!=' '&&*str1!='=')
+                {
+                    text=text+*str1;
+                    str1++;
+                }
+
+                result=SearchVar(text,var_tree);
+                text="";
+                while(*str!=';'&& *str!=',')
+                {
+                    while(*str==' ')
+                        str++;
+                    while(*str!=';'&& *str!=','&&*str!=' ')
+                    {
+                        text=text+str;
+                        str++;
+                    }
+                    expression.push(text);
+                    text="";
+                }
+                CalcExpression(expression,result->content.value);
+
+            }
+            str++;
+        }
+        if(flag==1)
+        {
+            cout << line_number<<endl;
+            output << line_number <<"\t";
+            flag=0;
+        }
+
+    }
+}
