@@ -7,6 +7,9 @@
 #include <new>
 #include <cstring>
 #include <stack>
+#include <queue>
+#include <map>
+#include <sstream>
 
 using namespace std;
 typedef struct {
@@ -30,8 +33,10 @@ typedef struct  var_node {
 void PreProcess(vector<line_node> &word_analysier);//词法分析,能很好地处理注释
 bool FindText(char *&str,const char *text1,line_node &lnode,string &text);//寻找特定字符，并过滤之前空格
 void CreateVarTree(vector<line_node> &word_a,var_node *current,vector <line_node>::iterator &iter_c1,vector <string>::iterator &iter_c2,int &flag1);
-
+var_node* SearchVar(string name,var_node *base);
 bool IsStr(string str);
+int Precede(string str1,string str2);
+int CalcExpression(queue <string> expression);
 int main()
 {
     vector <line_node> word_analysier;//存储词法分析器运行结果
@@ -234,6 +239,7 @@ void CreateVarTree(vector <line_node> &word_a,var_node *current,vector <line_nod
                 iter_2++;
                 current->content.scope=new var_node;
                 current->content.scope->is_var=false;
+                current->content.scope->parent=current;
                 flag1++;
                 CreateVarTree(word_a,current->content.scope,iter_1,iter_2,flag1);
                 flag1--;
@@ -295,5 +301,157 @@ bool IsStr(string str)
         return false;
     }
 }
+var_node * SearchVar(string name,var_node *base)
+{
+    int has_found;
+    var_node * cursor=base->next;
+    while(cursor!=NULL)
+    {
+        if(cursor->is_var &&cursor->name==name)
+        {
+            has_found=true;
+            break;
+        }
+        if(cursor->next==NULL){
+            cursor =cursor ->parent;
+            cursor=cursor->parent;
+        }else{
+            cursor =cursor->next;
+        }
+    }
+    if(has_found)
+    {
+        return cursor;
+    }else{
+        return NULL;
+    }
+}
+
+int CalcExpression(queue <string> expression)
+{
+    stack <string,vector<string> > optr,oped;//oped:number; optr:fuhao
+    stringstream stream;
+    int a;
+    int b;
+    int flag=0;
+    string temp;
+    string result;
+    expression.push("#");
+
+    while(!expression.empty())
+    {
+        if(IsStr(expression.front()))
+        {
+            oped.push(expression.front());
+            expression.pop();
+        }else{
+            if (flag==0)
+            {
+                 optr.push(expression.front());
+                 expression.pop();
+                 flag++;
+
+            }
+            else if(!optr.empty())
+            {
+
+                if(Precede(expression.front(),optr.top())==0){
+                    optr.pop();
+                    expression.pop();
+                }else if(Precede(expression.front(),optr.top())==-1){
+                    stream <<oped.top();
+                    stream >> a;
+                    oped.pop();
+
+                    stream <<oped.top();
+                    stream >> a;
+                    temp=optr.top();
+                    optr.pop();
+                    if(temp=="+")
+                    {
+                        a=a+b;
+
+                    }
+                   else if(temp=="-")
+                    {
+                        a=b-a;
+
+                    }
+                    else if(temp=="*")
+                    {
+                        a=a*b;
+
+                    }
+                   else if(temp=="/")
+                    {
+                        a=b/a;
+
+                    }
+                        stream <<a;
+                        stream >> result;
+                        oped.push(result);
+
+                    optr.push(expression.front());
+                    expression.pop();
+                }else if(Precede(expression.front(),optr.top())==1)
+                {
+                    temp=expression.front();
+                    expression.pop();
+                    stream <<oped.top();
+                    stream >> a;
+
+                    oped.pop();
+                    stream <<expression.front();
+                    stream >> b;
+
+                    expression.pop();
+
+                    if(temp=="+")
+                    {
+                        a=a+b;
+
+                    }
+                   else if(temp=="-")
+                    {
+                        a=b-a;
+
+                    }
+                    else if(temp=="*")
+                    {
+                        a=a*b;
+
+                    }
+                   else if(temp=="/")
+                    {
+                        a=b/a;
+
+                    }
+
+                        stream <<a;
+                        stream >> result;
+                        oped.push(result);
+                }
 
 
+            }
+        }
+    }
+    stream << oped.top();
+    stream >> a;
+    return a;
+
+}
+int Precede(string str1,string str2)
+{
+    map <string,map<string,int> > str_map;
+    vector<string> str={"+","-","*","/","(",")","#"};
+    int i,j;
+    int value[7][7]={1,1,-1,-1,-1,1,1,1,1,-1,-1,-1,1,1,1,1,1,1,-1,1,1,1,1,1,1,-1,1,1,-1,-1,-1,-1,-1,0,1,1,1,1,1,1,1,1,-1,-1,-1,-1,-1,1,0};
+    for(i=0;i<7;i++)
+        for(j=0;j<7;j++)
+            str_map[str[i]][str[j]]=value[i][j];
+    str_map["+"]["+"]=1;
+
+    return str_map[str1][str2];
+
+}
