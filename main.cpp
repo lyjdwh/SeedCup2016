@@ -36,7 +36,7 @@ void CreateVarTree(vector<line_node> &word_a,var_node *current,vector <line_node
 var_node* SearchVar(string name,var_node *base);
 bool IsStr(string str);
 int Precede(string str1,string str2);
-int CalcExpression(queue <string> expression);
+int CalcExpression(queue <string>& expression);
 int main()
 {
     vector <line_node> word_analysier;//存储词法分析器运行结果
@@ -51,12 +51,23 @@ int main()
     cout <<*(((word_analysier.begin())->word).begin())<<endl;
     CreateVarTree(word_analysier,var_tree,iter_c1,iter_c2,flag1);
     //输出结果
-    for (int j=0;j<word_analysier.size();j++)
-    {
-    for(int i=0;i<word_analysier[j].word_number;i++)//word_analysier[10].word_number
-        cout <<word_analysier[j].word[i]<<"\t";
-    cout <<word_analysier[j].line_number<<endl;
-    }
+//    for (int j=0;j<word_analysier.size();j++)
+//    {
+//    for(int i=0;i<word_analysier[j].word_number;i++)//word_analysier[10].word_number
+//        cout <<word_analysier[j].word[i]<<"\t";
+//    cout <<word_analysier[j].line_number<<endl;
+//    }
+    queue <string> expression;
+
+    expression.push("3");
+    expression.push("+");
+    expression.push("3");
+    expression.push("*");
+    expression.push("2");
+
+    int result=CalcExpression(expression);
+    cout << result <<endl;
+
 }
 void PreProcess(vector <line_node> &word_analysier)
 {
@@ -293,8 +304,8 @@ void CreateVarTree(vector <line_node> &word_a,var_node *current,vector <line_nod
 }
 bool IsStr(string str)
 {
-    if(str!="+"&&str!="-"&&str!="++"&&str!="--"&&str!="="&&str!="=="&&str!="}"
-            &&str!="{"&&str!="("&&str!="}"&&str!="\""&&str!=";"&&str!=",")
+    if(str!="+"&&str!="-"&&str!="++"&&str!="--"&&str!="="&&str!="=="&&str!="}"&&str!=")"
+            &&str!="{"&&str!="("&&str!="}"&&str!="\""&&str!=";"&&str!=","&&str!="#"&&str!="*"&&str!="/"&&str!="(")
     {
         return true;
     }else{
@@ -327,7 +338,7 @@ var_node * SearchVar(string name,var_node *base)
     }
 }
 
-int CalcExpression(queue <string> expression)
+int CalcExpression(queue <string> &expression)
 {
     stack <string,vector<string> > optr,oped;//oped:number; optr:fuhao
     stringstream stream;
@@ -352,19 +363,72 @@ int CalcExpression(queue <string> expression)
                  flag++;
 
             }
-            else if(!optr.empty())
+            else
             {
+                 if(optr.empty()){
+                     stream <<oped.top();
+                     stream >> a;
+                     stream.clear();
+                     oped.pop();
+                     temp=expression.front();
+                     expression.pop();
+                     stream <<expression.front();
+                     stream >> b;
+                     stream.clear();
+                     expression.pop();
+                     if(temp=="+")
+                     {
+                         a=a+b;
 
-                if(Precede(expression.front(),optr.top())==0){
+                     }
+                    else if(temp=="-")
+                     {
+                         a=b-a;
+
+                     }
+                     else if(temp=="*")
+                     {
+                         a=a*b;
+
+                     }
+                    else if(temp=="/")
+                     {
+                         a=b/a;
+
+                     }
+                         stream <<a;
+                         stream >> result;
+                         stream.clear();
+                         oped.push(result);
+
+ //                    optr.push(expression.front());
+
+
+                 }
+                else if(Precede(expression.front(),optr.top())==0){
                     optr.pop();
                     expression.pop();
-                }else if(Precede(expression.front(),optr.top())==-1){
+                }else if(Precede(expression.front(),optr.top())==-2)
+                {
+                    optr.push(expression.front());
+                    expression.pop();
+
+                }else if(optr.top()=="(")
+                {
+                    optr.push(expression.front());
+                    expression.pop();
+
+                }
+                else if((Precede(expression.front(),optr.top())==-1) ||expression.front()==")"){
                     stream <<oped.top();
                     stream >> a;
+                    stream.clear();
                     oped.pop();
 
                     stream <<oped.top();
-                    stream >> a;
+                    stream >> b;
+                    stream.clear();
+                    oped.pop();
                     temp=optr.top();
                     optr.pop();
                     if(temp=="+")
@@ -389,9 +453,11 @@ int CalcExpression(queue <string> expression)
                     }
                         stream <<a;
                         stream >> result;
+                        stream.clear();
                         oped.push(result);
 
-                    optr.push(expression.front());
+//                    optr.push(expression.front());
+                        optr.pop();
                     expression.pop();
                 }else if(Precede(expression.front(),optr.top())==1)
                 {
@@ -399,11 +465,11 @@ int CalcExpression(queue <string> expression)
                     expression.pop();
                     stream <<oped.top();
                     stream >> a;
-
+                    stream.clear();
                     oped.pop();
-                    stream <<expression.front();
+                    stream << expression.front();
                     stream >> b;
-
+                    stream.clear();
                     expression.pop();
 
                     if(temp=="+")
@@ -429,6 +495,7 @@ int CalcExpression(queue <string> expression)
 
                         stream <<a;
                         stream >> result;
+                        stream.clear();
                         oped.push(result);
                 }
 
@@ -438,6 +505,7 @@ int CalcExpression(queue <string> expression)
     }
     stream << oped.top();
     stream >> a;
+    stream.clear();
     return a;
 
 }
@@ -446,7 +514,7 @@ int Precede(string str1,string str2)
     map <string,map<string,int> > str_map;
     vector<string> str={"+","-","*","/","(",")","#"};
     int i,j;
-    int value[7][7]={1,1,-1,-1,-1,1,1,1,1,-1,-1,-1,1,1,1,1,1,1,-1,1,1,1,1,1,1,-1,1,1,-1,-1,-1,-1,-1,0,1,1,1,1,1,1,1,1,-1,-1,-1,-1,-1,1,0};
+    int value[7][7]={1,1,-1,-1,-1,1,1,1,1,-1,-1,-1,1,1,1,1,1,1,-1,1,1,1,1,1,1,-1,1,1,-1,-1,-1,-1,-1,0,-2,1,1,1,1,1,1,1,-1,-1,-1,-1,-1,1,0};
     for(i=0;i<7;i++)
         for(j=0;j<7;j++)
             str_map[str[i]][str[j]]=value[i][j];
@@ -455,3 +523,4 @@ int Precede(string str1,string str2)
     return str_map[str1][str2];
 
 }
+
